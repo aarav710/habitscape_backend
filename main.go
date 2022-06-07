@@ -49,18 +49,21 @@ func Open(databaseUrl string) *ent.Client {
 }
 
 func main() {
+	// make database connection
 	client := Open("postgresql://aaravjain:@localhost:5432/habitscape")
   ctx := context.Background()
   if err := client.Schema.Create(ctx); err != nil {
     fmt.Println(err)
   } 
- 
+
+  // create redis client
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: "localhost:6379",
   })
-
+  
+	// provide redis client as cache dependency
   cacheService := cache.ProvideCache(redisClient)
-	
+	// provide redis client as redis session dependency
   sessionsService, err := sessions.NewSessionsService(ctx, redisClient)
 	if err != nil {
 		fmt.Println(err)
@@ -70,7 +73,8 @@ func main() {
     MaxAge: 86400 * 60,
 		HttpOnly: true,
 	})
-
+  
+	// set social login library store as the session service redis client 
 	gothic.Store = sessionsService.Store
   
 	router := gin.Default()
